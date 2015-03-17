@@ -13,71 +13,73 @@ public class BlockCipher {
 
 	public static void main(String[] args) {
 		BlockCipher cipher = new BlockCipher();
-//		Scanner sc = new Scanner(System.in);
-//		
-//		System.out.println("Welcome to BlockCipher! Please choose encryption or decryption!");
-//		System.out.println("1. Encryption");
-//		System.out.println("2. Decryption");
-//		boolean isEncryption = (sc.nextInt()==1);
-//		cipher.setIsEncryption(isEncryption);
-//		
-//		if (isEncryption) {
-//			System.out.println("Please press enter to choose plaintext file!");
-//		}
-//		else {
-//			System.out.println("Please press enter to choose ciphertext file!");
-//		}
-//		sc.nextLine();
-//		cipher.readInput();
-//		
-//		System.out.println("Please choose mode of operation!");
-//		System.out.println("1. ECB");
-//		System.out.println("2. CBC");
-//		System.out.println("3. CFB 8-bit");
-//		System.out.println("Mode of operation :");
-//		int mode = (sc.nextInt()%3)+1;
-//		
-//		System.out.println("Please type in the key :");
-//		String keyString = sc.nextLine();
-//		cipher.setKey(keyString);
-//		
-//		if (isEncryption) {
-//			System.out.println("Encryption process started...");
-//		}
-//		else {
-//			System.out.println("Decryption process started...");
-//		}
-//		switch (mode) {
-//		case 1:
-//			cipher.ECB();
-//			break;
-//		case 2:
-//			cipher.CBC();
-//			break;
-//		case 3:
-//			cipher.CFB();
-//			break;
-//		}
-//		
-//		if (isEncryption) {
-//			System.out.println("Encryption process finished!.");
-//		}
-//		else {
-//			System.out.println("Decryption process finished!");
-//		}
-//		cipher.saveOutput();
+		Scanner sc = new Scanner(System.in);
 		
-		cipher.setKey("tes");
+		System.out.println("Welcome to BlockCipher! Please choose encryption or decryption!");
+		System.out.println("1. Encryption");
+		System.out.println("2. Decryption");
+		boolean isEncryption = (sc.nextInt()==1);
+		sc.nextLine();
+		cipher.setIsEncryption(isEncryption);
 		
-		byte[] tes = new byte[32];
-		for (int i=0; i<32; i++) {
-			tes[i] = (byte)(i*5);
+		if (isEncryption) {
+			System.out.println("Please press enter to choose plaintext file!");
 		}
-		System.out.println(Arrays.toString(tes));
+		else {
+			System.out.println("Please press enter to choose ciphertext file!");
+		}
+		sc.nextLine();
+		cipher.readInput();
 		
-		cipher.encrypt(tes, 0, tes, 0);
-		cipher.decrypt(tes, 0, tes, 0);
-		System.out.println(Arrays.toString(tes));
+		System.out.println("Please choose mode of operation!");
+		System.out.println("1. ECB");
+		System.out.println("2. CBC");
+		System.out.println("3. CFB 8-bit");
+		System.out.println("Mode of operation :");
+		int mode = sc.nextInt();
+		sc.nextLine();
+		
+		System.out.println("Please type in the key :");
+		String keyString = sc.nextLine();
+		cipher.setKey(keyString);
+		
+		if (isEncryption) {
+			System.out.println("Encryption process started...");
+		}
+		else {
+			System.out.println("Decryption process started...");
+		}
+		switch (mode) {
+		case 1:
+			cipher.ECB();
+			break;
+		case 2:
+			cipher.CBC();
+			break;
+		case 3:
+			cipher.CFB();
+			break;
+		}
+		
+		if (isEncryption) {
+			System.out.println("Encryption process finished!");
+		}
+		else {
+			System.out.println("Decryption process finished!");
+		}
+		cipher.saveOutput();
+		
+//		cipher.setKey("tes");
+//		
+//		byte[] tes = new byte[32];
+//		for (int i=0; i<32; i++) {
+//			tes[i] = (byte)(i*5);
+//		}
+//		System.out.println(Arrays.toString(tes));
+//		
+//		cipher.encrypt(tes, 0, tes, 0);
+//		cipher.decrypt(tes, 0, tes, 0);
+//		System.out.println(Arrays.toString(tes));
 	}
 	
 	private Rijndael rijndael;
@@ -124,10 +126,6 @@ public class BlockCipher {
 		System.arraycopy(in, inOff, L, 0, 16);
 		System.arraycopy(in, inOff+16, R, 0, 16);
 		
-//		System.out.println("###############ENCRYPTION#############");
-//		System.out.print(Arrays.toString(L));
-//		System.out.println(Arrays.toString(R));
-		
 		for (int i=0; i<16; i++) {
 			System.arraycopy(L, 0, temp, 0, 16);
 			System.arraycopy(R, 0, L, 0, 16);
@@ -135,8 +133,6 @@ public class BlockCipher {
 			for (int j=0; j<16; j++) {
 				R[j] ^= temp[j];
 			}
-//			System.out.print(Arrays.toString(L));
-//			System.out.println(Arrays.toString(R));
 			
 			System.arraycopy(L, 0, temp, 0, 16);
 			System.arraycopy(R, 0, L, 0, 16);
@@ -144,14 +140,10 @@ public class BlockCipher {
 			for (int j=0; j<16; j++) {
 				R[j] ^= temp[j];
 			}
-//			System.out.print(Arrays.toString(L));
-//			System.out.println(Arrays.toString(R));
 		}
 		
-//		System.out.println();
-		
-		System.arraycopy(L, 0, out, 0, 16);
-		System.arraycopy(R, 0, out, 16, 16);
+		System.arraycopy(L, 0, out, outOff, 16);
+		System.arraycopy(R, 0, out, outOff+16, 16);
 	}
 	
 	public void decrypt(byte[] in, int inOff, byte[] out, int outOff) {
@@ -162,10 +154,6 @@ public class BlockCipher {
 		System.arraycopy(in, inOff, L, 0, 16);
 		System.arraycopy(in, inOff+16, R, 0, 16);
 		
-//		System.out.println("###############DECRYPTION#############");
-//		System.out.print(Arrays.toString(L));
-//		System.out.println(Arrays.toString(R));
-		
 		for (int i=15; i>=0; i--) {
 			System.arraycopy(R, 0, temp, 0, 16);
 			System.arraycopy(L, 0, R, 0, 16);
@@ -173,8 +161,6 @@ public class BlockCipher {
 			for (int j=0; j<16; j++) {
 				L[j] ^= temp[j];
 			}
-//			System.out.print(Arrays.toString(L));
-//			System.out.println(Arrays.toString(R));
 			
 			System.arraycopy(R, 0, temp, 0, 16);
 			System.arraycopy(L, 0, R, 0, 16);
@@ -182,35 +168,102 @@ public class BlockCipher {
 			for (int j=0; j<16; j++) {
 				L[j] ^= temp[j];
 			}
-//			System.out.print(Arrays.toString(L));
-//			System.out.println(Arrays.toString(R));
 		}
 		
-//		System.out.println();
-		
-		System.arraycopy(L, 0, out, 0, 16);
-		System.arraycopy(R, 0, out, 16, 16);
+		System.arraycopy(L, 0, out, outOff, 16);
+		System.arraycopy(R, 0, out, outOff+16, 16);
 	}
 	
 	public void ECB() {
 		if (isEncryption) {
-//			byte[] length = (Integer.toString(input.length)+"#").getBytes(StandardCharsets.UTF_8);
-//			
-//			
-//			byte[] dirtyStegoBytes = Arrays.copyOf(fileProp, fileProp.length+stegoBytes.length);
-//			System.arraycopy(stegoBytes, 0, dirtyStegoBytes, fileProp.length, stegoBytes.length);
+			// padding to be multiples of 256 bit
+			byte[] inputEncryption = Arrays.copyOf(input, input.length+(32-(input.length%32)));
+			
+			// encrypt using ECB
+			int i=0;
+			while (i<inputEncryption.length/32) {
+				encrypt(inputEncryption, i*32, inputEncryption, i*32);
+				i++;
+			}
+
+			// add length info to output
+			byte[] length = (Integer.toString(input.length)+"#").getBytes(StandardCharsets.UTF_8);
+			output = Arrays.copyOf(length, length.length+inputEncryption.length);
+			System.arraycopy(inputEncryption, 0, output, length.length, inputEncryption.length);
 		}
 		else {
+			// get length info
+			String inputString = new String(input, StandardCharsets.UTF_8);
+			int firstFound = inputString.indexOf('#');
+			int length = Integer.parseInt(inputString.substring(0, firstFound));
+			byte[] inputDecryption = Arrays.copyOfRange(input, firstFound+1, input.length);
 			
+			// decrypt using ECB
+			int i=0;
+			while (i<inputDecryption.length/32) {
+				decrypt(inputDecryption, i*32, inputDecryption, i*32);
+				i++;
+			}
+			
+			// remove padding
+			output = Arrays.copyOf(inputDecryption, length);
 		}
 	}
 	
 	public void CBC() {
-		
+		if (isEncryption) {
+			// padding to be multiples of 256 bit
+			byte[] inputEncryption = Arrays.copyOf(input, input.length+(32-(input.length%32)));
+			
+			// TODO encrypt using CBC
+			
+
+			// add length info to output
+			byte[] length = (Integer.toString(input.length)+"#").getBytes(StandardCharsets.UTF_8);
+			output = Arrays.copyOf(length, length.length+inputEncryption.length);
+			System.arraycopy(inputEncryption, 0, output, length.length, inputEncryption.length);
+		}
+		else {
+			// get length info
+			String inputString = new String(input, StandardCharsets.UTF_8);
+			int firstFound = inputString.indexOf('#');
+			int length = Integer.parseInt(inputString.substring(0, firstFound));
+			byte[] inputDecryption = Arrays.copyOfRange(input, firstFound+1, input.length);
+			
+			// TODO decrypt using CBC
+			
+			
+			// remove padding
+			output = Arrays.copyOf(inputDecryption, length);
+		}
 	}
 	
 	public void CFB() {
-		
+		if (isEncryption) {
+			// padding to be multiples of 256 bit
+			byte[] inputEncryption = Arrays.copyOf(input, input.length+(32-(input.length%32)));
+			
+			// TODO encrypt using CFB
+			
+
+			// add length info to output
+			byte[] length = (Integer.toString(input.length)+"#").getBytes(StandardCharsets.UTF_8);
+			output = Arrays.copyOf(length, length.length+inputEncryption.length);
+			System.arraycopy(inputEncryption, 0, output, length.length, inputEncryption.length);
+		}
+		else {
+			// get length info
+			String inputString = new String(input, StandardCharsets.UTF_8);
+			int firstFound = inputString.indexOf('#');
+			int length = Integer.parseInt(inputString.substring(0, firstFound));
+			byte[] inputDecryption = Arrays.copyOfRange(input, firstFound+1, input.length);
+			
+			// TODO decrypt using ECB
+			
+			
+			// remove padding
+			output = Arrays.copyOf(inputDecryption, length);
+		}
 	}
 	
 	public void readInput() {
@@ -218,7 +271,6 @@ public class BlockCipher {
 			File file = fileChooser.getSelectedFile();
 			try {
 				input = Files.readAllBytes(file.toPath());
-				output = new byte[input.length];
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
