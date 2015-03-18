@@ -43,7 +43,7 @@ public class BlockCipher {
 		else {
 			System.out.println("Please press enter to choose ciphertext file!");
 		}
-		//sc.nextLine();
+		sc.nextLine();
 		
 		
 		cipher.readInput();
@@ -327,7 +327,7 @@ public class BlockCipher {
 			System.arraycopy(C0, 0, queue, 0, 32);
 			int i=0;
 			while (i<inputDecryption.length) {
-				decrypt(queue, 0, tempDecryption, 0);
+				encrypt(queue, 0, tempDecryption, 0);
 				outputDecryption[i] ^= tempDecryption[0];
 				
 				System.arraycopy(queue, 1, queueTemp, 0, 31);
