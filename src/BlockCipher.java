@@ -113,7 +113,7 @@ public class BlockCipher {
 	JFileChooser fileChooser;
 	
 	private boolean isRijndael = false;
-	private boolean isSerpent = true;
+	private boolean isSerpent = false;
 	
 	public BlockCipher() {
 		IV = new byte[16];
