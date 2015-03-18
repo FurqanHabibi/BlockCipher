@@ -11,6 +11,10 @@ public class Rijndael {
     private long[][]    workingKey;
     private long        A0, A1, A2, A3;
     
+    public Rijndael() {
+    	
+    }
+    
     public Rijndael(byte[] key) {
     	workingKey = generateWorkingKey(key);
     }

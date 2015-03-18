@@ -2,9 +2,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.jar.Pack200.Unpacker;
 
 import javax.swing.JFileChooser;
 
@@ -12,6 +14,19 @@ import javax.swing.JFileChooser;
 public class BlockCipher {
 
 	public static void main(String[] args) {
+		try {
+			for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager
+					.getInstalledLookAndFeels()) {
+				if ("Windows".equals(info.getName())) {
+					javax.swing.UIManager.setLookAndFeel(info.getClassName());
+					break;
+				}
+			}
+		} catch (ClassNotFoundException | InstantiationException
+				| IllegalAccessException
+				| javax.swing.UnsupportedLookAndFeelException ex) {
+		}
+		
 		BlockCipher cipher = new BlockCipher();
 		Scanner sc = new Scanner(System.in);
 		
@@ -28,7 +43,9 @@ public class BlockCipher {
 		else {
 			System.out.println("Please press enter to choose ciphertext file!");
 		}
-		sc.nextLine();
+		//sc.nextLine();
+		
+		
 		cipher.readInput();
 		
 		System.out.println("Please choose mode of operation!");
@@ -89,6 +106,7 @@ public class BlockCipher {
 	private byte[] output;
 	private byte[] key;
 	private byte[] IV;
+	private byte[] C0;
 	
 	private boolean isEncryption;
 	
@@ -99,6 +117,11 @@ public class BlockCipher {
 		Random random = new Random(0);
 		for (int i=0; i<16; i++) {
 			IV[i] = (byte)(random.nextInt() % 255);
+		}
+		
+		C0 = new byte[32];
+		for (int i=0; i<32; i++) {
+			C0[i] = (byte)(random.nextInt() % 255);
 		}
 		
 		fileChooser = new JFileChooser();
@@ -215,7 +238,18 @@ public class BlockCipher {
 			// padding to be multiples of 256 bit
 			byte[] inputEncryption = Arrays.copyOf(input, input.length+(32-(input.length%32)));
 			
-			// TODO encrypt using CBC
+			// encrypt using CBC
+			byte[] C = new byte[32];
+			System.arraycopy(C0, 0, C, 0, 32);
+			int i=0;
+			while (i<inputEncryption.length/32) {
+				for (int j=0; j<32; j++) {
+					inputEncryption[i*32+j] ^= C[j];
+				}
+				encrypt(inputEncryption, i*32, inputEncryption, i*32);
+				System.arraycopy(inputEncryption, i*32, C, 0, 32);
+				i++;
+			}
 			
 
 			// add length info to output
@@ -229,23 +263,49 @@ public class BlockCipher {
 			int firstFound = inputString.indexOf('#');
 			int length = Integer.parseInt(inputString.substring(0, firstFound));
 			byte[] inputDecryption = Arrays.copyOfRange(input, firstFound+1, input.length);
+			byte[] outputDecryption = new byte[inputDecryption.length];
 			
-			// TODO decrypt using CBC
-			
+			// decrypt using CBC
+			byte[] Cbefore = new byte[32];
+			System.arraycopy(C0, 0, Cbefore, 0, 32);
+			int i=0;
+			while (i<inputDecryption.length/32) {
+				decrypt(inputDecryption, i*32, outputDecryption, i*32);
+				for (int j=0; j<32; j++) {
+					outputDecryption[i*32+j] ^= Cbefore[j];
+				}
+				System.arraycopy(inputDecryption, i*32, Cbefore, 0, 32);
+				i++;
+			}
 			
 			// remove padding
-			output = Arrays.copyOf(inputDecryption, length);
+			output = Arrays.copyOf(outputDecryption, length);
 		}
 	}
+
 	
 	public void CFB() {
 		if (isEncryption) {
 			// padding to be multiples of 256 bit
 			byte[] inputEncryption = Arrays.copyOf(input, input.length+(32-(input.length%32)));
-			
-			// TODO encrypt using CFB
-			
 
+						
+			// TODO encrypt using CFB
+			byte[] queue = new byte[32];
+			byte[] queueTemp = new byte[32];
+			byte[] tempEncryption = new byte[32];
+			System.arraycopy(C0, 0, queue, 0, 32);
+			int i=0;
+			while (i<inputEncryption.length) {
+				encrypt(queue, 0, tempEncryption, 0);
+				inputEncryption[i] ^= tempEncryption[0];
+			
+				System.arraycopy(queue, 1, queueTemp, 0, 31);
+				System.arraycopy(inputEncryption, i, queueTemp, 31, 1);
+				System.arraycopy(queueTemp, 0, queue, 0, 32);
+				i++;
+			}
+			
 			// add length info to output
 			byte[] length = (Integer.toString(input.length)+"#").getBytes(StandardCharsets.UTF_8);
 			output = Arrays.copyOf(length, length.length+inputEncryption.length);
@@ -257,16 +317,33 @@ public class BlockCipher {
 			int firstFound = inputString.indexOf('#');
 			int length = Integer.parseInt(inputString.substring(0, firstFound));
 			byte[] inputDecryption = Arrays.copyOfRange(input, firstFound+1, input.length);
+			byte[] outputDecryption = new byte[32];
+			outputDecryption = inputDecryption.clone();
 			
-			// TODO decrypt using ECB
+			// TODO decrypt using CFB
+			byte[] queue = new byte[32];
+			byte[] tempDecryption = new byte[32];
+			byte[] queueTemp = new byte[32];
+			System.arraycopy(C0, 0, queue, 0, 32);
+			int i=0;
+			while (i<inputDecryption.length) {
+				decrypt(queue, 0, tempDecryption, 0);
+				outputDecryption[i] ^= tempDecryption[0];
+				
+				System.arraycopy(queue, 1, queueTemp, 0, 31);
+				System.arraycopy(inputDecryption, i, queueTemp, 31, 1);
+				System.arraycopy(queueTemp, 0, queue, 0, 32);
+				i++;
+			}
 			
 			
 			// remove padding
-			output = Arrays.copyOf(inputDecryption, length);
+			output = Arrays.copyOf(outputDecryption, length);
 		}
 	}
 	
 	public void readInput() {
+		
 		if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 			File file = fileChooser.getSelectedFile();
 			try {
@@ -279,6 +356,7 @@ public class BlockCipher {
 	}
 	
 	public void saveOutput() {
+		
 		if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
 			File file = fileChooser.getSelectedFile();
 			try {

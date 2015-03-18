@@ -5,6 +5,10 @@ public class Serpent {
     private int PHI    = 0x9E3779B9;       // (sqrt(5) - 1) * 2**31
     private int[] wKey;
     private int X0, X1, X2, X3;    // registers
+    
+    public Serpent() {
+    	
+    }
 	
     public Serpent(byte[] key) {
     	wKey = makeWorkingKey(key);
