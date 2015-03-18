@@ -112,6 +112,9 @@ public class BlockCipher {
 	
 	JFileChooser fileChooser;
 	
+	private boolean isRijndael = false;
+	private boolean isSerpent = true;
+	
 	public BlockCipher() {
 		IV = new byte[16];
 		Random random = new Random(0);
@@ -142,59 +145,85 @@ public class BlockCipher {
 	}
 	
 	public void encrypt(byte[] in, int inOff, byte[] out, int outOff) {
-		byte[] L = new byte[16];
-		byte[] R = new byte[16];
-		byte[] temp = new byte[16];
-		
-		System.arraycopy(in, inOff, L, 0, 16);
-		System.arraycopy(in, inOff+16, R, 0, 16);
-		
-		for (int i=0; i<16; i++) {
-			System.arraycopy(L, 0, temp, 0, 16);
-			System.arraycopy(R, 0, L, 0, 16);
-			rijndael.encryptRound(R, 0, R, 0, i);
-			for (int j=0; j<16; j++) {
-				R[j] ^= temp[j];
+		if (isRijndael) {
+			RijndaelEngine re = new RijndaelEngine(256);
+			re.init(true, key);
+			re.processBlock(in, inOff, out, outOff);
+		}
+		else if (isSerpent) {
+			SerpentEngine se = new SerpentEngine();
+			se.init(true, key);
+			se.processBlock(in, inOff, out, outOff);
+			se.processBlock(in, inOff+16, out, outOff+16);
+		}
+		else {
+			byte[] L = new byte[16];
+			byte[] R = new byte[16];
+			byte[] temp = new byte[16];
+			
+			System.arraycopy(in, inOff, L, 0, 16);
+			System.arraycopy(in, inOff+16, R, 0, 16);
+			
+			for (int i=0; i<16; i++) {
+				System.arraycopy(L, 0, temp, 0, 16);
+				System.arraycopy(R, 0, L, 0, 16);
+				rijndael.encryptRound(R, 0, R, 0, i);
+				for (int j=0; j<16; j++) {
+					R[j] ^= temp[j];
+				}
+				
+				System.arraycopy(L, 0, temp, 0, 16);
+				System.arraycopy(R, 0, L, 0, 16);
+				serpent.encryptRound(R, 0, R, 0, i);
+				for (int j=0; j<16; j++) {
+					R[j] ^= temp[j];
+				}
 			}
 			
-			System.arraycopy(L, 0, temp, 0, 16);
-			System.arraycopy(R, 0, L, 0, 16);
-			serpent.encryptRound(R, 0, R, 0, i);
-			for (int j=0; j<16; j++) {
-				R[j] ^= temp[j];
-			}
+			System.arraycopy(L, 0, out, outOff, 16);
+			System.arraycopy(R, 0, out, outOff+16, 16);
 		}
-		
-		System.arraycopy(L, 0, out, outOff, 16);
-		System.arraycopy(R, 0, out, outOff+16, 16);
 	}
 	
 	public void decrypt(byte[] in, int inOff, byte[] out, int outOff) {
-		byte[] L = new byte[16];
-		byte[] R = new byte[16];
-		byte[] temp = new byte[16];
-		
-		System.arraycopy(in, inOff, L, 0, 16);
-		System.arraycopy(in, inOff+16, R, 0, 16);
-		
-		for (int i=15; i>=0; i--) {
-			System.arraycopy(R, 0, temp, 0, 16);
-			System.arraycopy(L, 0, R, 0, 16);
-			serpent.encryptRound(L, 0, L, 0, i);
-			for (int j=0; j<16; j++) {
-				L[j] ^= temp[j];
+		if (isRijndael) {
+			RijndaelEngine re = new RijndaelEngine(256);
+			re.init(false, key);
+			re.processBlock(in, inOff, out, outOff);
+		}
+		else if (isSerpent) {
+			SerpentEngine se = new SerpentEngine();
+			se.init(false, key);
+			se.processBlock(in, inOff, out, outOff);
+			se.processBlock(in, inOff+16, out, outOff+16);
+		}
+		else {
+			byte[] L = new byte[16];
+			byte[] R = new byte[16];
+			byte[] temp = new byte[16];
+			
+			System.arraycopy(in, inOff, L, 0, 16);
+			System.arraycopy(in, inOff+16, R, 0, 16);
+			
+			for (int i=15; i>=0; i--) {
+				System.arraycopy(R, 0, temp, 0, 16);
+				System.arraycopy(L, 0, R, 0, 16);
+				serpent.encryptRound(L, 0, L, 0, i);
+				for (int j=0; j<16; j++) {
+					L[j] ^= temp[j];
+				}
+				
+				System.arraycopy(R, 0, temp, 0, 16);
+				System.arraycopy(L, 0, R, 0, 16);
+				rijndael.encryptRound(L, 0, L, 0, i);
+				for (int j=0; j<16; j++) {
+					L[j] ^= temp[j];
+				}
 			}
 			
-			System.arraycopy(R, 0, temp, 0, 16);
-			System.arraycopy(L, 0, R, 0, 16);
-			rijndael.encryptRound(L, 0, L, 0, i);
-			for (int j=0; j<16; j++) {
-				L[j] ^= temp[j];
-			}
+			System.arraycopy(L, 0, out, outOff, 16);
+			System.arraycopy(R, 0, out, outOff+16, 16);
 		}
-		
-		System.arraycopy(L, 0, out, outOff, 16);
-		System.arraycopy(R, 0, out, outOff+16, 16);
 	}
 	
 	public void ECB() {

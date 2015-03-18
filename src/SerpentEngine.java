@@ -1,116 +1,124 @@
 
-public class Serpent {
 
-	private int ROUNDS = 32;
-    private int PHI    = 0x9E3779B9;       // (sqrt(5) - 1) * 2**31
-    private int[] wKey;
-    private int X0, X1, X2, X3;    // registers
-    
-    public Serpent() {
-    	
-    }
-	
-    public Serpent(byte[] key) {
-    	wKey = makeWorkingKey(key);
-    }
-    
-    public void encrypt(byte[] in, int inOff, byte[] out, int outOff) {
-    	
-    }
-    
-    public void decrypt(byte[] in, int inOff, byte[] out, int outOff) {
-    	
-    }
-    
-    public void encryptRound( byte[] in, int inOff, byte[] out, int outOff, int round) {
-        X3 = bytesToWord(in, inOff);
-        X2 = bytesToWord(in, inOff + 4);
-        X1 = bytesToWord(in, inOff + 8);
-        X0 = bytesToWord(in, inOff + 12);
-        
-        switch (round%8) {
-        case 0 :
-        	sb0(wKey[(round*4)] ^ X0, wKey[(round*4)+1] ^ X1, wKey[(round*4)+2] ^ X2, wKey[(round*4)+3] ^ X3);
-        	break;
-        case 1 :
-        	sb1(wKey[(round*4)] ^ X0, wKey[(round*4)+1] ^ X1, wKey[(round*4)+2] ^ X2, wKey[(round*4)+3] ^ X3);
-        	break;
-        case 2 :
-        	sb2(wKey[(round*4)] ^ X0, wKey[(round*4)+1] ^ X1, wKey[(round*4)+2] ^ X2, wKey[(round*4)+3] ^ X3);
-        	break;
-        case 3 :
-        	sb3(wKey[(round*4)] ^ X0, wKey[(round*4)+1] ^ X1, wKey[(round*4)+2] ^ X2, wKey[(round*4)+3] ^ X3);
-        	break;
-        case 4 :
-        	sb4(wKey[(round*4)] ^ X0, wKey[(round*4)+1] ^ X1, wKey[(round*4)+2] ^ X2, wKey[(round*4)+3] ^ X3);
-        	break;
-        case 5 :
-        	sb5(wKey[(round*4)] ^ X0, wKey[(round*4)+1] ^ X1, wKey[(round*4)+2] ^ X2, wKey[(round*4)+3] ^ X3);
-        	break;
-        case 6 :
-        	sb6(wKey[(round*4)] ^ X0, wKey[(round*4)+1] ^ X1, wKey[(round*4)+2] ^ X2, wKey[(round*4)+3] ^ X3);
-        	break;
-        case 7 :
-        	sb7(wKey[(round*4)] ^ X0, wKey[(round*4)+1] ^ X1, wKey[(round*4)+2] ^ X2, wKey[(round*4)+3] ^ X3);
-        	break;
-        }
-        LT();
+/**
+ * Serpent is a 128-bit 32-round block cipher with variable key lengths,
+ * including 128, 192 and 256 bit keys conjectured to be at least as
+ * secure as three-key triple-DES.
+ * <p>
+ * Serpent was designed by Ross Anderson, Eli Biham and Lars Knudsen as a
+ * candidate algorithm for the NIST AES Quest.
+ * <p>
+ * For full details see the <a href="http://www.cl.cam.ac.uk/~rja14/serpent.html">The Serpent home page</a>
+ */
+public class SerpentEngine
+{
+    private static final int    BLOCK_SIZE = 16;
 
-        wordToBytes(X3, out, outOff);
-        wordToBytes(X2, out, outOff + 4);
-        wordToBytes(X1, out, outOff + 8);
-        wordToBytes(X0, out, outOff + 12);
-    }
+    static final int ROUNDS = 32;
+    static final int PHI    = 0x9E3779B9;       // (sqrt(5) - 1) * 2**31
+
+    private boolean        encrypting;
+    private int[]          wKey;
+
+    private int           X0, X1, X2, X3;    // registers
+
+    /**
+     * initialise a Serpent cipher.
+     *
+     * @param encrypting whether or not we are for encryption.
+     * @param params the parameters required to set up the cipher.
+     * @exception IllegalArgumentException if the params argument is
+     * inappropriate.
+     */
+//    public void init(
+//        boolean             encrypting,
+//        CipherParameters    params)
+//    {
+//        if (params instanceof KeyParameter)
+//        {
+//            this.encrypting = encrypting;
+//            this.wKey = makeWorkingKey(((KeyParameter)params).getKey());
+//            return;
+//        }
+//
+//        throw new IllegalArgumentException("invalid parameter passed to Serpent init - " + params.getClass().getName());
+//    }
     
-    public void decryptRound( byte[] in, int inOff, byte[] out, int outOff, int round) {
-        X3 = bytesToWord(in, inOff);
-        X2 = bytesToWord(in, inOff + 4);
-        X1 = bytesToWord(in, inOff + 8);
-        X0 = bytesToWord(in, inOff + 12);
-        
-        inverseLT();
-        switch (round%8) {
-        case 0 :
-        	ib0(X0, X1, X2, X3);
-        	X0 ^= wKey[(round*4)]; X1 ^= wKey[(round*4)+1]; X2 ^= wKey[(round*4)+2]; X3 ^= wKey[(round*4)+3];
-        	break;
-        case 1 :
-        	ib1(X0, X1, X2, X3);
-        	X0 ^= wKey[(round*4)]; X1 ^= wKey[(round*4)+1]; X2 ^= wKey[(round*4)+2]; X3 ^= wKey[(round*4)+3];
-        	break;
-        case 2 :
-        	ib2(X0, X1, X2, X3);
-        	X0 ^= wKey[(round*4)]; X1 ^= wKey[(round*4)+1]; X2 ^= wKey[(round*4)+2]; X3 ^= wKey[(round*4)+3];
-        	break;
-        case 3 :
-        	ib3(X0, X1, X2, X3);
-        	X0 ^= wKey[(round*4)]; X1 ^= wKey[(round*4)+1]; X2 ^= wKey[(round*4)+2]; X3 ^= wKey[(round*4)+3];
-        	break;
-        case 4 :
-        	ib4(X0, X1, X2, X3);
-        	X0 ^= wKey[(round*4)]; X1 ^= wKey[(round*4)+1]; X2 ^= wKey[(round*4)+2]; X3 ^= wKey[(round*4)+3];
-        	break;
-        case 5 :
-        	ib5(X0, X1, X2, X3);
-        	X0 ^= wKey[(round*4)]; X1 ^= wKey[(round*4)+1]; X2 ^= wKey[(round*4)+2]; X3 ^= wKey[(round*4)+3];
-        	break;
-        case 6 :
-        	ib6(X0, X1, X2, X3);
-        	X0 ^= wKey[(round*4)]; X1 ^= wKey[(round*4)+1]; X2 ^= wKey[(round*4)+2]; X3 ^= wKey[(round*4)+3];
-        	break;
-        case 7 :
-        	ib7(X0, X1, X2, X3);
-        	X0 ^= wKey[(round*4)]; X1 ^= wKey[(round*4)+1]; X2 ^= wKey[(round*4)+2]; X3 ^= wKey[(round*4)+3];
-        	break;
+    public void init (boolean encrypting, byte[] key) {
+    	this.encrypting = encrypting;
+    	this.wKey = makeWorkingKey(key);
+    }
+
+    public String getAlgorithmName()
+    {
+        return "Serpent";
+    }
+
+    public int getBlockSize()
+    {
+        return BLOCK_SIZE;
+    }
+
+    /**
+     * Process one block of input from the array in and write it to
+     * the out array.
+     *
+     * @param in the array containing the input data.
+     * @param inOff offset into the in array the data starts at.
+     * @param out the array the output data will be copied into.
+     * @param outOff the offset into the out array the output will start at.
+     * @exception DataLengthException if there isn't enough data in in, or
+     * space in out.
+     * @exception IllegalStateException if the cipher isn't initialised.
+     * @return the number of bytes processed and produced.
+     */
+    public final int processBlock(
+        byte[]  in,
+        int     inOff,
+        byte[]  out,
+        int     outOff)
+    {
+        if (wKey == null)
+        {
+            throw new IllegalStateException("Serpent not initialised");
         }
 
-        wordToBytes(X3, out, outOff);
-        wordToBytes(X2, out, outOff + 4);
-        wordToBytes(X1, out, outOff + 8);
-        wordToBytes(X0, out, outOff + 12);
+        if ((inOff + BLOCK_SIZE) > in.length)
+        {
+            //throw new DataLengthException("input buffer too short");
+        }
+
+        if ((outOff + BLOCK_SIZE) > out.length)
+        {
+            //throw new OutputLengthException("output buffer too short");
+        }
+
+        if (encrypting)
+        {
+            encryptBlock(in, inOff, out, outOff);
+        }
+        else
+        {
+            decryptBlock(in, inOff, out, outOff);
+        }
+
+        return BLOCK_SIZE;
     }
-    
-    private int[] makeWorkingKey(byte[] key) throws  IllegalArgumentException {
+
+    public void reset()
+    {
+    }
+
+    /**
+     * Expand a user-supplied key material into a session key.
+     *
+     * @param key  The user-key bytes (multiples of 4) to use.
+     * @exception IllegalArgumentException
+     */
+    private int[] makeWorkingKey(
+        byte[] key)
+    throws  IllegalArgumentException
+    {
         //
         // pad key to 256 bits
         //
@@ -265,6 +273,176 @@ public class Serpent {
         dst[dstOff + 1] = (byte)(word >>> 16);
         dst[dstOff]     = (byte)(word >>> 24);
     }
+
+    /**
+     * Encrypt one block of plaintext.
+     *
+     * @param in the array containing the input data.
+     * @param inOff offset into the in array the data starts at.
+     * @param out the array the output data will be copied into.
+     * @param outOff the offset into the out array the output will start at.
+     */
+    private void encryptBlock(
+        byte[]  in,
+        int     inOff,
+        byte[]  out,
+        int     outOff)
+    {
+        X3 = bytesToWord(in, inOff);
+        X2 = bytesToWord(in, inOff + 4);
+        X1 = bytesToWord(in, inOff + 8);
+        X0 = bytesToWord(in, inOff + 12);
+
+        sb0(wKey[0] ^ X0, wKey[1] ^ X1, wKey[2] ^ X2, wKey[3] ^ X3); LT();
+        sb1(wKey[4] ^ X0, wKey[5] ^ X1, wKey[6] ^ X2, wKey[7] ^ X3); LT();
+        sb2(wKey[8] ^ X0, wKey[9] ^ X1, wKey[10] ^ X2, wKey[11] ^ X3); LT();
+        sb3(wKey[12] ^ X0, wKey[13] ^ X1, wKey[14] ^ X2, wKey[15] ^ X3); LT();
+        sb4(wKey[16] ^ X0, wKey[17] ^ X1, wKey[18] ^ X2, wKey[19] ^ X3); LT();
+        sb5(wKey[20] ^ X0, wKey[21] ^ X1, wKey[22] ^ X2, wKey[23] ^ X3); LT();
+        sb6(wKey[24] ^ X0, wKey[25] ^ X1, wKey[26] ^ X2, wKey[27] ^ X3); LT();
+        sb7(wKey[28] ^ X0, wKey[29] ^ X1, wKey[30] ^ X2, wKey[31] ^ X3); LT();
+        sb0(wKey[32] ^ X0, wKey[33] ^ X1, wKey[34] ^ X2, wKey[35] ^ X3); LT();
+        sb1(wKey[36] ^ X0, wKey[37] ^ X1, wKey[38] ^ X2, wKey[39] ^ X3); LT();
+        sb2(wKey[40] ^ X0, wKey[41] ^ X1, wKey[42] ^ X2, wKey[43] ^ X3); LT();
+        sb3(wKey[44] ^ X0, wKey[45] ^ X1, wKey[46] ^ X2, wKey[47] ^ X3); LT();
+        sb4(wKey[48] ^ X0, wKey[49] ^ X1, wKey[50] ^ X2, wKey[51] ^ X3); LT();
+        sb5(wKey[52] ^ X0, wKey[53] ^ X1, wKey[54] ^ X2, wKey[55] ^ X3); LT();
+        sb6(wKey[56] ^ X0, wKey[57] ^ X1, wKey[58] ^ X2, wKey[59] ^ X3); LT();
+        sb7(wKey[60] ^ X0, wKey[61] ^ X1, wKey[62] ^ X2, wKey[63] ^ X3); LT();
+        sb0(wKey[64] ^ X0, wKey[65] ^ X1, wKey[66] ^ X2, wKey[67] ^ X3); LT();
+        sb1(wKey[68] ^ X0, wKey[69] ^ X1, wKey[70] ^ X2, wKey[71] ^ X3); LT();
+        sb2(wKey[72] ^ X0, wKey[73] ^ X1, wKey[74] ^ X2, wKey[75] ^ X3); LT();
+        sb3(wKey[76] ^ X0, wKey[77] ^ X1, wKey[78] ^ X2, wKey[79] ^ X3); LT();
+        sb4(wKey[80] ^ X0, wKey[81] ^ X1, wKey[82] ^ X2, wKey[83] ^ X3); LT();
+        sb5(wKey[84] ^ X0, wKey[85] ^ X1, wKey[86] ^ X2, wKey[87] ^ X3); LT();
+        sb6(wKey[88] ^ X0, wKey[89] ^ X1, wKey[90] ^ X2, wKey[91] ^ X3); LT();
+        sb7(wKey[92] ^ X0, wKey[93] ^ X1, wKey[94] ^ X2, wKey[95] ^ X3); LT();
+        sb0(wKey[96] ^ X0, wKey[97] ^ X1, wKey[98] ^ X2, wKey[99] ^ X3); LT();
+        sb1(wKey[100] ^ X0, wKey[101] ^ X1, wKey[102] ^ X2, wKey[103] ^ X3); LT();
+        sb2(wKey[104] ^ X0, wKey[105] ^ X1, wKey[106] ^ X2, wKey[107] ^ X3); LT();
+        sb3(wKey[108] ^ X0, wKey[109] ^ X1, wKey[110] ^ X2, wKey[111] ^ X3); LT();
+        sb4(wKey[112] ^ X0, wKey[113] ^ X1, wKey[114] ^ X2, wKey[115] ^ X3); LT();
+        sb5(wKey[116] ^ X0, wKey[117] ^ X1, wKey[118] ^ X2, wKey[119] ^ X3); LT();
+        sb6(wKey[120] ^ X0, wKey[121] ^ X1, wKey[122] ^ X2, wKey[123] ^ X3); LT();
+        sb7(wKey[124] ^ X0, wKey[125] ^ X1, wKey[126] ^ X2, wKey[127] ^ X3);
+
+        wordToBytes(wKey[131] ^ X3, out, outOff);
+        wordToBytes(wKey[130] ^ X2, out, outOff + 4);
+        wordToBytes(wKey[129] ^ X1, out, outOff + 8);
+        wordToBytes(wKey[128] ^ X0, out, outOff + 12);
+    }
+
+    /**
+     * Decrypt one block of ciphertext.
+     *
+     * @param in the array containing the input data.
+     * @param inOff offset into the in array the data starts at.
+     * @param out the array the output data will be copied into.
+     * @param outOff the offset into the out array the output will start at.
+     */
+    private void decryptBlock(
+        byte[]  in,
+        int     inOff,
+        byte[]  out,
+        int     outOff)
+    {
+        X3 = wKey[131] ^ bytesToWord(in, inOff);
+        X2 = wKey[130] ^ bytesToWord(in, inOff + 4);
+        X1 = wKey[129] ^ bytesToWord(in, inOff + 8);
+        X0 = wKey[128] ^ bytesToWord(in, inOff + 12);
+
+        ib7(X0, X1, X2, X3);
+        X0 ^= wKey[124]; X1 ^= wKey[125]; X2 ^= wKey[126]; X3 ^= wKey[127];
+        inverseLT(); ib6(X0, X1, X2, X3);
+        X0 ^= wKey[120]; X1 ^= wKey[121]; X2 ^= wKey[122]; X3 ^= wKey[123];
+        inverseLT(); ib5(X0, X1, X2, X3);
+        X0 ^= wKey[116]; X1 ^= wKey[117]; X2 ^= wKey[118]; X3 ^= wKey[119];
+        inverseLT(); ib4(X0, X1, X2, X3);
+        X0 ^= wKey[112]; X1 ^= wKey[113]; X2 ^= wKey[114]; X3 ^= wKey[115];
+        inverseLT(); ib3(X0, X1, X2, X3);
+        X0 ^= wKey[108]; X1 ^= wKey[109]; X2 ^= wKey[110]; X3 ^= wKey[111];
+        inverseLT(); ib2(X0, X1, X2, X3);
+        X0 ^= wKey[104]; X1 ^= wKey[105]; X2 ^= wKey[106]; X3 ^= wKey[107];
+        inverseLT(); ib1(X0, X1, X2, X3);
+        X0 ^= wKey[100]; X1 ^= wKey[101]; X2 ^= wKey[102]; X3 ^= wKey[103];
+        inverseLT(); ib0(X0, X1, X2, X3);
+        X0 ^= wKey[96]; X1 ^= wKey[97]; X2 ^= wKey[98]; X3 ^= wKey[99];
+        inverseLT(); ib7(X0, X1, X2, X3);
+        X0 ^= wKey[92]; X1 ^= wKey[93]; X2 ^= wKey[94]; X3 ^= wKey[95];
+        inverseLT(); ib6(X0, X1, X2, X3);
+        X0 ^= wKey[88]; X1 ^= wKey[89]; X2 ^= wKey[90]; X3 ^= wKey[91];
+        inverseLT(); ib5(X0, X1, X2, X3);
+        X0 ^= wKey[84]; X1 ^= wKey[85]; X2 ^= wKey[86]; X3 ^= wKey[87];
+        inverseLT(); ib4(X0, X1, X2, X3);
+        X0 ^= wKey[80]; X1 ^= wKey[81]; X2 ^= wKey[82]; X3 ^= wKey[83];
+        inverseLT(); ib3(X0, X1, X2, X3);
+        X0 ^= wKey[76]; X1 ^= wKey[77]; X2 ^= wKey[78]; X3 ^= wKey[79];
+        inverseLT(); ib2(X0, X1, X2, X3);
+        X0 ^= wKey[72]; X1 ^= wKey[73]; X2 ^= wKey[74]; X3 ^= wKey[75];
+        inverseLT(); ib1(X0, X1, X2, X3);
+        X0 ^= wKey[68]; X1 ^= wKey[69]; X2 ^= wKey[70]; X3 ^= wKey[71];
+        inverseLT(); ib0(X0, X1, X2, X3);
+        X0 ^= wKey[64]; X1 ^= wKey[65]; X2 ^= wKey[66]; X3 ^= wKey[67];
+        inverseLT(); ib7(X0, X1, X2, X3);
+        X0 ^= wKey[60]; X1 ^= wKey[61]; X2 ^= wKey[62]; X3 ^= wKey[63];
+        inverseLT(); ib6(X0, X1, X2, X3);
+        X0 ^= wKey[56]; X1 ^= wKey[57]; X2 ^= wKey[58]; X3 ^= wKey[59];
+        inverseLT(); ib5(X0, X1, X2, X3);
+        X0 ^= wKey[52]; X1 ^= wKey[53]; X2 ^= wKey[54]; X3 ^= wKey[55];
+        inverseLT(); ib4(X0, X1, X2, X3);
+        X0 ^= wKey[48]; X1 ^= wKey[49]; X2 ^= wKey[50]; X3 ^= wKey[51];
+        inverseLT(); ib3(X0, X1, X2, X3);
+        X0 ^= wKey[44]; X1 ^= wKey[45]; X2 ^= wKey[46]; X3 ^= wKey[47];
+        inverseLT(); ib2(X0, X1, X2, X3);
+        X0 ^= wKey[40]; X1 ^= wKey[41]; X2 ^= wKey[42]; X3 ^= wKey[43];
+        inverseLT(); ib1(X0, X1, X2, X3);
+        X0 ^= wKey[36]; X1 ^= wKey[37]; X2 ^= wKey[38]; X3 ^= wKey[39];
+        inverseLT(); ib0(X0, X1, X2, X3);
+        X0 ^= wKey[32]; X1 ^= wKey[33]; X2 ^= wKey[34]; X3 ^= wKey[35];
+        inverseLT(); ib7(X0, X1, X2, X3);
+        X0 ^= wKey[28]; X1 ^= wKey[29]; X2 ^= wKey[30]; X3 ^= wKey[31];
+        inverseLT(); ib6(X0, X1, X2, X3);
+        X0 ^= wKey[24]; X1 ^= wKey[25]; X2 ^= wKey[26]; X3 ^= wKey[27];
+        inverseLT(); ib5(X0, X1, X2, X3);
+        X0 ^= wKey[20]; X1 ^= wKey[21]; X2 ^= wKey[22]; X3 ^= wKey[23];
+        inverseLT(); ib4(X0, X1, X2, X3);
+        X0 ^= wKey[16]; X1 ^= wKey[17]; X2 ^= wKey[18]; X3 ^= wKey[19];
+        inverseLT(); ib3(X0, X1, X2, X3);
+        X0 ^= wKey[12]; X1 ^= wKey[13]; X2 ^= wKey[14]; X3 ^= wKey[15];
+        inverseLT(); ib2(X0, X1, X2, X3);
+        X0 ^= wKey[8]; X1 ^= wKey[9]; X2 ^= wKey[10]; X3 ^= wKey[11];
+        inverseLT(); ib1(X0, X1, X2, X3);
+        X0 ^= wKey[4]; X1 ^= wKey[5]; X2 ^= wKey[6]; X3 ^= wKey[7];
+        inverseLT(); ib0(X0, X1, X2, X3);
+
+        wordToBytes(X3 ^ wKey[3], out, outOff);
+        wordToBytes(X2 ^ wKey[2], out, outOff + 4);
+        wordToBytes(X1 ^ wKey[1], out, outOff + 8);
+        wordToBytes(X0 ^ wKey[0], out, outOff + 12);
+    }
+
+    /**
+     * The sboxes below are based on the work of Brian Gladman and
+     * Sam Simpson, whose original notice appears below.
+     * <p>
+     * For further details see:
+     *      http://fp.gladman.plus.com/cryptography_technology/serpent/
+     */
+
+    /* Partially optimised Serpent S Box boolean functions derived  */
+    /* using a recursive descent analyser but without a full search */
+    /* of all subtrees. This set of S boxes is the result of work    */
+    /* by Sam Simpson and Brian Gladman using the spare time on a    */
+    /* cluster of high capacity servers to search for S boxes with    */
+    /* this customised search engine. There are now an average of    */
+    /* 15.375 terms    per S box.                                        */
+    /*                                                              */
+    /* Copyright:   Dr B. R Gladman (gladman@seven77.demon.co.uk)   */
+    /*                and Sam Simpson (s.simpson@mia.co.uk)            */
+    /*              17th December 1998                                */
+    /*                                                              */
+    /* We hereby give permission for information in this file to be */
+    /* used freely subject only to acknowledgement of its origin.    */
 
     /**
      * S0 - { 3, 8,15, 1,10, 6, 5,11,14,13, 4, 2, 7, 0, 9,12 } - 15 terms.
